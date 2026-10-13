@@ -1,6 +1,5 @@
 {
-  "type": "module",
   "dependencies": {
-    "node-bring-api": "^3.0.0"
+    "bring-shopping": "^2.0.1"
   }
 }
