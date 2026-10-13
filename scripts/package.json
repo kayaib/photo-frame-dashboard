@@ -1,0 +1,6 @@
+{
+  "type": "module",
+  "dependencies": {
+    "node-bring-api": "^3.0.0"
+  }
+}

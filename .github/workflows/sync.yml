@@ -1,4 +1,4 @@
-name: Sync TimeTree Calendar
+name: Sync Calendar & Shopping List
 
 on:
   schedule:
@@ -14,6 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # ── TimeTree calendar ──────────────────────────────────────
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -30,10 +31,25 @@ jobs:
             -c GYCFb6Y5TbY2 \
             -o calendar.ics
 
-      - name: Commit updated calendar
+      # ── Bring shopping list ────────────────────────────────────
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Bring dependencies
+        run: npm install --prefix scripts
+
+      - name: Sync Bring list
+        env:
+          BRING_EMAIL: ${{ secrets.BRING_EMAIL }}
+          BRING_PASSWORD: ${{ secrets.BRING_PASSWORD }}
+        run: node scripts/sync-bring.js
+
+      # ── Commit all changes ────────────────────────────────────
+      - name: Commit updates
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add calendar.ics
-          git diff --cached --quiet || git commit -m "sync: update calendar.ics"
+          git add calendar.ics bring.json
+          git diff --cached --quiet || git commit -m "sync: update calendar and shopping list"
           git push
