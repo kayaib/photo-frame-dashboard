@@ -1,0 +1,70 @@
+{
+  "updatedAt": "2026-10-13T13:54:20.551Z",
+  "listName": "Einkaufsliste",
+  "items": [
+    {
+      "name": "Coca Cola",
+      "specification": "Penny oder Lidl ab 11.10 + Kaufland"
+    },
+    {
+      "name": "Zitronenwasser",
+      "specification": ""
+    },
+    {
+      "name": "Datteln",
+      "specification": ""
+    },
+    {
+      "name": "Cigköfte",
+      "specification": ""
+    },
+    {
+      "name": "Kaki",
+      "specification": ""
+    },
+    {
+      "name": "Gummibärchen",
+      "specification": ""
+    },
+    {
+      "name": "Frosta",
+      "specification": "Kaufland"
+    },
+    {
+      "name": "Tempeh",
+      "specification": ""
+    },
+    {
+      "name": "Chiasamen",
+      "specification": ""
+    },
+    {
+      "name": "Maiswaffeln",
+      "specification": ""
+    },
+    {
+      "name": "Äpfel",
+      "specification": ""
+    },
+    {
+      "name": "Spezi",
+      "specification": "Kaufland"
+    },
+    {
+      "name": "Bananen",
+      "specification": ""
+    },
+    {
+      "name": "Zartbitterschokolade",
+      "specification": ""
+    },
+    {
+      "name": "Pistazien",
+      "specification": "Kaufland"
+    },
+    {
+      "name": "Kokosmilch",
+      "specification": "Edeka"
+    }
+  ]
+}
