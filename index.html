@@ -73,6 +73,66 @@
       font-size: 0.9rem;
       margin-top: 2rem;
     }
+
+    /* ── Audi widget ─────────────────────────────────────── */
+    .audi-widget {
+      margin-top: 2rem;
+      background: #1a1a19;
+      border: 1px solid #2c2c2a;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+    }
+
+    .audi-header {
+      font-size: 0.75rem;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.75rem;
+    }
+
+    .audi-soc-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .audi-soc-value {
+      font-size: 2rem;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .audi-soc-unit {
+      font-size: 0.9rem;
+      color: #777;
+    }
+
+    .audi-range {
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 0.75rem;
+    }
+
+    .audi-bar-track {
+      height: 6px;
+      background: #2c2c2a;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 0.6rem;
+    }
+
+    .audi-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+
+    .audi-state {
+      font-size: 0.8rem;
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -81,6 +141,19 @@
     <h1>Upcoming Events</h1>
     <div class="last-updated" id="last-updated"></div>
   </header>
+
+  <div id="audi-widget" class="audi-widget" style="display:none">
+    <div class="audi-header">Audi Q4 e-tron</div>
+    <div class="audi-soc-row">
+      <span class="audi-soc-value" id="audi-soc">--</span>
+      <span class="audi-soc-unit">%</span>
+    </div>
+    <div class="audi-range" id="audi-range"></div>
+    <div class="audi-bar-track">
+      <div class="audi-bar-fill" id="audi-bar" style="width:0%"></div>
+    </div>
+    <div class="audi-state" id="audi-state"></div>
+  </div>
 
   <div id="events-container"><div class="status">Loading calendar...</div></div>
 
@@ -213,7 +286,58 @@
 
     loadCalendar();
     loadBring();
-    setInterval(() => { loadCalendar(); loadBring(); }, 30 * 60 * 1000);
+    loadAudi();
+    setInterval(() => { loadCalendar(); loadBring(); loadAudi(); }, 30 * 60 * 1000);
+
+    async function loadAudi() {
+      try {
+        const res = await fetch('audi.json?nocache=' + Date.now());
+        if (!res.ok) return;
+        const data = await res.json();
+        renderAudi(data);
+      } catch {}
+    }
+
+    function renderAudi(data) {
+      const widget = document.getElementById('audi-widget');
+      if (!widget) return;
+
+      const soc = data.stateOfCharge;
+      const range = data.rangeKm;
+      const state = data.chargingState;
+      const power = data.chargingPower;
+      const remaining = data.remainingChargingTime;
+      const plug = data.plugState;
+
+      if (soc == null) return;
+      widget.style.display = '';
+
+      document.getElementById('audi-soc').textContent = soc;
+
+      const bar = document.getElementById('audi-bar');
+      bar.style.width = soc + '%';
+      bar.style.background = soc >= 70 ? '#0ca30c' : soc >= 30 ? '#3987e5' : '#e06c3c';
+
+      if (range != null) {
+        document.getElementById('audi-range').textContent = range + ' km Reichweite';
+      }
+
+      const stateEl = document.getElementById('audi-state');
+      const stateMap = {
+        'charging': power ? `Ldt mit ${power} kW` : 'Laden...',
+        'readyForCharging': plug === 'connected' ? 'Verbunden, bereit' : 'Bereit zum Laden',
+        'notReadyForCharging': 'Nicht verbunden',
+        'conservationCharging': 'Erhaltungsladung',
+        'chargingComplete': 'Vollgeladen',
+      };
+      let stateText = stateMap[state] || state || '';
+      if (state === 'charging' && remaining) {
+        const h = Math.floor(remaining / 60);
+        const m = remaining % 60;
+        stateText += h > 0 ? ` — noch ${h}h ${m}min` : ` — noch ${m}min`;
+      }
+      stateEl.textContent = stateText;
+    }
   </script>
 
 </body>

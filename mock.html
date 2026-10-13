@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Family Dashboard</title>
+  <style>
+    /* ── Palette (dark, validated) ─────────────────────────────── */
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #1a1a19;
+      --text-1:    #ffffff;
+      --text-2:    #c3c2b7;
+      --text-m:    #898781;
+      --grid:      #2c2c2a;
+      --baseline:  #383835;
+      --blue:      #3987e5;
+      --blue-area: rgba(57,135,229,0.10);
+      --aqua:      #199e70;
+      --violet:    #9085e9;
+      --orange:    #d95926;
+      --good:      #0ca30c;
+      --sep:       rgba(255,255,255,0.07);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-1);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      height: 100vh;
+      width: 100vw;
+      display: grid;
+      grid-template-columns: 260px 1fr 340px;
+      gap: 1px;
+      background-color: var(--grid);
+      overflow: hidden;
+    }
+
+    /* Left column: clock / audi / bring */
+    .col-left {
+      background: var(--bg);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 1px;
+      background-color: var(--grid);
+    }
+
+    .widget {
+      background: var(--surface);
+      padding: 1.25rem 1.5rem;
+      overflow: hidden;
+    }
+
+    .widget-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-m);
+      margin-bottom: 1rem;
+    }
+
+    /* ── Clock ─────────────────────────────────────────────────── */
+    .clock-time {
+      font-size: 3rem;
+      font-weight: 200;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .clock-date {
+      font-size: 0.8rem;
+      color: var(--text-2);
+      margin-top: 0.4rem;
+    }
+
+    /* ── Audi ──────────────────────────────────────────────────── */
+    .audi-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.8rem;
+    }
+    .audi-model { font-size: 0.9rem; }
+    .audi-status {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.7rem;
+      color: var(--good);
+    }
+    .status-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--good);
+    }
+    .battery-track {
+      height: 5px;
+      background: var(--grid);
+      border-radius: 3px;
+      margin-bottom: 0.8rem;
+    }
+    .battery-fill {
+      height: 100%;
+      background: var(--good);
+      border-radius: 3px;
+    }
+    .audi-stats {
+      display: flex;
+      justify-content: space-between;
+    }
+    .audi-stat {
+      font-size: 0.65rem;
+      color: var(--text-m);
+      line-height: 1.5;
+    }
+    .audi-stat strong {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 400;
+      color: var(--text-1);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Bring ─────────────────────────────────────────────────── */
+    .bring-list { font-size: 0.85rem; }
+    .bring-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.32rem 0;
+      border-bottom: 1px solid var(--grid);
+    }
+    .bring-item:last-child { border-bottom: none; }
+    .bring-qty { color: var(--text-m); font-size: 0.78rem; }
+
+    /* ── Calendar ──────────────────────────────────────────────── */
+    .widget-calendar { overflow-y: auto; }
+    .cal-group { margin-bottom: 1.2rem; }
+    .cal-group:last-child { margin-bottom: 0; }
+    .cal-date-label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-m);
+      padding-bottom: 0.35rem;
+      margin-bottom: 0.2rem;
+      border-bottom: 1px solid var(--grid);
+    }
+    .cal-date-label.today { color: var(--blue); }
+    .cal-event {
+      display: grid;
+      grid-template-columns: 6px 3.5rem 1fr;
+      align-items: center;
+      column-gap: 0.65rem;
+      padding: 0.32rem 0;
+      border-bottom: 1px solid var(--grid);
+      font-size: 0.85rem;
+    }
+    .cal-event:last-child { border-bottom: none; }
+    .cal-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .cal-time {
+      font-size: 0.72rem;
+      color: var(--text-m);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Weather ───────────────────────────────────────────────── */
+    .widget-weather { overflow-y: auto; }
+
+    .wx-current {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+    .wx-temp {
+      font-size: 3.2rem;
+      font-weight: 200;
+      line-height: 1;
+    }
+    .wx-temp-unit { font-size: 1.2rem; vertical-align: super; }
+    .wx-desc { font-size: 0.85rem; color: var(--text-2); margin-top: 0.25rem; }
+    .wx-meta { font-size: 0.72rem; color: var(--text-m); margin-top: 0.15rem; }
+
+    .wx-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.4rem;
+      margin-bottom: 1.1rem;
+    }
+    .wx-stat {
+      background: var(--bg);
+      padding: 0.5rem 0.6rem;
+      border-radius: 3px;
+    }
+    .wx-stat-label {
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-m);
+      margin-bottom: 0.2rem;
+    }
+    .wx-stat-value { font-size: 0.85rem; }
+
+    .wx-chart-section { margin-bottom: 1rem; }
+    .wx-chart-title {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-m);
+      margin-bottom: 0.35rem;
+    }
+    .wx-chart { display: block; width: 100%; }
+
+    /* 5-day forecast */
+    .wx-forecast {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.35rem;
+      margin-top: 0.2rem;
+    }
+    .wx-fc-day {
+      background: var(--bg);
+      border-radius: 3px;
+      padding: 0.55rem 0.35rem;
+      text-align: center;
+    }
+    .wx-fc-name {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-m);
+      margin-bottom: 0.35rem;
+    }
+    .wx-fc-icon { height: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.35rem; }
+    .wx-fc-high { font-size: 0.85rem; }
+    .wx-fc-low { font-size: 0.75rem; color: var(--text-m); }
+    .wx-fc-rain { font-size: 0.65rem; color: var(--blue); margin-top: 0.2rem; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--grid); }
+  </style>
+</head>
+<body>
+
+  <!-- ── Left column ─────────────────────────────────────────── -->
+  <div class="col-left">
+
+    <!-- Clock -->
+    <div class="widget">
+      <div class="clock-time" id="clock-time">00:00</div>
+      <div class="clock-date" id="clock-date">—</div>
+    </div>
+
+    <!-- Audi -->
+    <div class="widget">
+      <div class="widget-label">Fahrzeug</div>
+      <div class="audi-header">
+        <span class="audi-model">Audi Q4 e-tron</span>
+        <span class="audi-status">
+          <span class="status-dot"></span>Lädt
+        </span>
+      </div>
+      <div class="battery-track">
+        <div class="battery-fill" style="width:73%"></div>
+      </div>
+      <div class="audi-stats">
+        <div class="audi-stat">Akku<strong>73 %</strong></div>
+        <div class="audi-stat">Reichweite<strong>247 km</strong></div>
+        <div class="audi-stat">Fertig<strong>06:30</strong></div>
+      </div>
+    </div>
+
+    <!-- Bring -->
+    <div class="widget">
+      <div class="widget-label">Einkaufsliste</div>
+      <div class="bring-list">
+        <div class="bring-item"><span>Milch</span><span class="bring-qty">2×</span></div>
+        <div class="bring-item"><span>Brot</span></div>
+        <div class="bring-item"><span>Käse</span></div>
+        <div class="bring-item"><span>Äpfel</span><span class="bring-qty">1 kg</span></div>
+        <div class="bring-item"><span>Lachs</span></div>
+        <div class="bring-item"><span>Tomatensoße</span><span class="bring-qty">3×</span></div>
+        <div class="bring-item"><span>Spülmittel</span></div>
+        <div class="bring-item"><span>Joghurt</span><span class="bring-qty">4×</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Calendar ─────────────────────────────────────────────── -->
+  <div class="widget widget-calendar">
+    <div class="widget-label">Kalender</div>
+
+    <div class="cal-group">
+      <div class="cal-date-label today">Heute · Montag, 13. Oktober</div>
+      <div class="cal-event">
+        <div class="cal-dot" style="background:var(--blue)"></div>
+        <div class="cal-time">10:00</div>
+        <div>Enpal Termin</div>
+      </div>
+      <div class="cal-event">
+        <div class="cal-dot" style="background:var(--aqua)"></div>
+        <div class="cal-time">Ganztag</div>
+        <div>Leonie Schule frei</div>
+      </div>
+    </div>
+
+    <div class="cal-group">
+      <div class="cal-date-label">Samstag, 18. Oktober</div>
+      <div class="cal-event">
+        <div class="cal-dot" style="background:var(--blue)"></div>
+        <div class="cal-time">14:15</div>
+        <div>Leonie &amp; Haktan Tennis</div>
+      </div>
+    </div>
+
+    <div class="cal-group">
+      <div class="cal-date-label">Samstag, 24. Oktober</div>
+      <div class="cal-event">
+        <div class="cal-dot" style="background:var(--violet)"></div>
+        <div class="cal-time">13:00</div>
+        <div>Eltern einladen</div>
+      </div>
+    </div>
+
+    <div class="cal-group">
+      <div class="cal-date-label">Samstag, 14. November</div>
+      <div class="cal-event">
+        <div class="cal-dot" style="background:var(--orange)"></div>
+        <div class="cal-time">19:30</div>
+        <div>Jenny Einweihungsparty</div>
+      </div>
+    </div>
+
+    <div class="cal-group">
+      <div class="cal-date-label">Mittwoch, 19. November</div>
+      <div class="cal-event">
+        <div class="cal-dot" style="background:var(--blue)"></div>
+        <div class="cal-time">Ganztag</div>
+        <div>Reifenwechsel Walldorf</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Weather ──────────────────────────────────────────────── -->
+  <div class="widget widget-weather">
+    <div class="widget-label">Wetter · Köngen</div>
+
+    <div class="wx-current">
+      <div>
+        <div class="wx-temp">17<span class="wx-temp-unit">°</span></div>
+        <div class="wx-desc">Teilweise bewölkt</div>
+        <div class="wx-meta">Gefühlt 15° &nbsp;·&nbsp; Luftf. 65%</div>
+      </div>
+      <!-- Partly cloudy SVG icon -->
+      <svg width="54" height="54" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="21" cy="21" r="8" fill="#c98500" opacity="0.85"/>
+        <line x1="21" y1="9"  x2="21" y2="6"  stroke="#c98500" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="21" y1="33" x2="21" y2="36" stroke="#c98500" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="9"  y1="21" x2="6"  y2="21" stroke="#c98500" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="33" y1="21" x2="36" y2="21" stroke="#c98500" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="13" y1="13" x2="11" y2="11" stroke="#c98500" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="29" y1="29" x2="31" y2="31" stroke="#c98500" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="29" y1="13" x2="31" y2="11" stroke="#c98500" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="13" y1="29" x2="11" y2="31" stroke="#c98500" stroke-width="1.8" stroke-linecap="round"/>
+        <ellipse cx="35" cy="38" rx="13" ry="8" fill="#898781" opacity="0.55"/>
+        <ellipse cx="27" cy="40" rx="9"  ry="7" fill="#898781" opacity="0.55"/>
+        <ellipse cx="31" cy="34" rx="8"  ry="8" fill="#898781" opacity="0.55"/>
+      </svg>
+    </div>
+
+    <div class="wx-stats">
+      <div class="wx-stat">
+        <div class="wx-stat-label">Wind</div>
+        <div class="wx-stat-value">12 km/h W</div>
+      </div>
+      <div class="wx-stat">
+        <div class="wx-stat-label">Niederschlag</div>
+        <div class="wx-stat-value">2 mm</div>
+      </div>
+      <div class="wx-stat">
+        <div class="wx-stat-label">UV-Index</div>
+        <div class="wx-stat-value">2 – Niedrig</div>
+      </div>
+    </div>
+
+    <!-- Temperature chart -->
+    <div class="wx-chart-section">
+      <div class="wx-chart-title">Temperatur heute (°C)</div>
+      <svg class="wx-chart" id="chart-temp" height="80"></svg>
+    </div>
+
+    <!-- Precipitation chart -->
+    <div class="wx-chart-section">
+      <div class="wx-chart-title">Niederschlag heute (mm)</div>
+      <svg class="wx-chart" id="chart-precip" height="54"></svg>
+    </div>
+
+    <!-- 5-day forecast -->
+    <div class="widget-label" style="margin-top:0.25rem">5-Tage-Prognose</div>
+    <div class="wx-forecast" id="forecast"></div>
+
+  </div>
+
+  <script>
+    /* ── Clock ─────────────────────────────────────────────────── */
+    function tick() {
+      const now = new Date();
+      document.getElementById('clock-time').textContent =
+        now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('clock-date').textContent =
+        now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+    tick();
+    setInterval(tick, 1000);
+
+    /* ── Weather data (mock) ────────────────────────────────────── */
+    const TEMPS   = [9,9,8,8,8,9,9,10,12,13,15,16,17,17,17,16,15,14,13,13,12,12,11,11];
+    const PRECIPS = [0,0,0,0,0,0,0,0,0,0,0,0,0,0.3,1.2,2.0,1.5,0.4,0,0,0,0,0,0];
+
+    const FORECAST = [
+      { name:'Mo', high:17, low:8,  rain:'10 %', cond:'pc' },
+      { name:'Di', high:14, low:10, rain:'80 %', cond:'rain' },
+      { name:'Mi', high:19, low:9,  rain:'5 %',  cond:'sun' },
+      { name:'Do', high:16, low:10, rain:'25 %', cond:'pc' },
+      { name:'Fr', high:13, low:9,  rain:'70 %', cond:'rain' },
+    ];
+
+    /* ── Temperature chart (line + area, 2px stroke) ─────────── */
+    function buildTempChart() {
+      const svg = document.getElementById('chart-temp');
+      const W = svg.clientWidth || 300;
+      const H = 80, PT = 10, PB = 16, PX = 6;
+      const plotW = W - PX * 2, plotH = H - PT - PB;
+      const minT = 6, maxT = 19;
+
+      const x = i => PX + (i / 23) * plotW;
+      const y = t => PT + (1 - (t - minT) / (maxT - minT)) * plotH;
+      const pts = TEMPS.map((t, i) => ({ x: x(i), y: y(t) }));
+
+      // Smooth cubic bezier path
+      let line = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+      for (let i = 1; i < pts.length; i++) {
+        const p = pts[i - 1], c = pts[i];
+        const dx = (c.x - p.x) / 3;
+        line += ` C${(p.x+dx).toFixed(1)},${p.y.toFixed(1)} ${(c.x-dx).toFixed(1)},${c.y.toFixed(1)} ${c.x.toFixed(1)},${c.y.toFixed(1)}`;
+      }
+      const area = `${line} L${pts.at(-1).x.toFixed(1)},${(PT+plotH).toFixed(1)} L${pts[0].x.toFixed(1)},${(PT+plotH).toFixed(1)} Z`;
+
+      // Tick marks at 0, 6, 12, 18
+      const ticks = [0, 6, 12, 18, 23];
+
+      // Peak + trough
+      const maxI = TEMPS.indexOf(Math.max(...TEMPS));
+      const minI = TEMPS.indexOf(Math.min(...TEMPS));
+
+      const gridLines = ticks.map(h =>
+        `<line x1="${x(h).toFixed(1)}" y1="${PT}" x2="${x(h).toFixed(1)}" y2="${PT+plotH}" stroke="#2c2c2a" stroke-width="1"/>`
+      ).join('');
+
+      const axisLabels = ticks.map(h =>
+        `<text x="${x(h).toFixed(1)}" y="${H-2}" text-anchor="middle" fill="#898781" font-size="8">${h === 23 ? '24' : h}</text>`
+      ).join('');
+
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#3987e5" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="#3987e5" stop-opacity="0.01"/>
+          </linearGradient>
+        </defs>
+        ${gridLines}
+        <line x1="${PX}" y1="${PT+plotH}" x2="${W-PX}" y2="${PT+plotH}" stroke="#383835" stroke-width="1"/>
+        <path d="${area}" fill="url(#tg)"/>
+        <path d="${line}" fill="none" stroke="#3987e5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <!-- Peak: dot + surface ring + label -->
+        <circle cx="${pts[maxI].x.toFixed(1)}" cy="${pts[maxI].y.toFixed(1)}" r="5" fill="#1a1a19"/>
+        <circle cx="${pts[maxI].x.toFixed(1)}" cy="${pts[maxI].y.toFixed(1)}" r="3.5" fill="#3987e5"/>
+        <text x="${pts[maxI].x.toFixed(1)}" y="${(pts[maxI].y - 8).toFixed(1)}" text-anchor="middle" fill="#ffffff" font-size="9">${TEMPS[maxI]}°</text>
+        <!-- Trough: dot + label -->
+        <circle cx="${pts[minI].x.toFixed(1)}" cy="${pts[minI].y.toFixed(1)}" r="5" fill="#1a1a19"/>
+        <circle cx="${pts[minI].x.toFixed(1)}" cy="${pts[minI].y.toFixed(1)}" r="3.5" fill="#3987e5" opacity="0.45"/>
+        <text x="${pts[minI].x.toFixed(1)}" y="${(pts[minI].y + 15).toFixed(1)}" text-anchor="middle" fill="#898781" font-size="9">${TEMPS[minI]}°</text>
+        ${axisLabels}
+      `;
+    }
+
+    /* ── Precipitation chart (bars, 4px rounded top) ─────────── */
+    function buildPrecipChart() {
+      const svg = document.getElementById('chart-precip');
+      const W = svg.clientWidth || 300;
+      const H = 54, PT = 4, PB = 14, PX = 6;
+      const plotW = W - PX * 2, plotH = H - PT - PB;
+      const maxP = 2.5;
+      const slotW = plotW / 24;
+      const barW = Math.max(2, slotW * 0.6);
+
+      const x = i => PX + (i + 0.5) * slotW - barW / 2;
+      const bh = p => (p / maxP) * plotH;
+
+      const ticks = [0, 6, 12, 18, 23];
+
+      const gridLines = ticks.map(h =>
+        `<line x1="${(PX + (h / 24) * plotW + slotW*0.5).toFixed(1)}" y1="${PT}" x2="${(PX + (h / 24) * plotW + slotW*0.5).toFixed(1)}" y2="${PT+plotH}" stroke="#2c2c2a" stroke-width="1"/>`
+      ).join('');
+
+      const bars = PRECIPS.map((p, i) => {
+        if (p <= 0) return '';
+        const bH = bh(p);
+        const bX = x(i);
+        const bY = PT + plotH - bH;
+        const r = Math.min(2, bH / 2);
+        return `<path d="M${bX.toFixed(1)},${(bY+r).toFixed(1)} Q${bX.toFixed(1)},${bY.toFixed(1)} ${(bX+r).toFixed(1)},${bY.toFixed(1)} L${(bX+barW-r).toFixed(1)},${bY.toFixed(1)} Q${(bX+barW).toFixed(1)},${bY.toFixed(1)} ${(bX+barW).toFixed(1)},${(bY+r).toFixed(1)} L${(bX+barW).toFixed(1)},${(PT+plotH).toFixed(1)} L${bX.toFixed(1)},${(PT+plotH).toFixed(1)} Z" fill="#3987e5"/>`;
+      }).join('');
+
+      const axisLabels = ticks.map(h =>
+        `<text x="${(PX + (h / 24) * plotW + slotW*0.5).toFixed(1)}" y="${H-1}" text-anchor="middle" fill="#898781" font-size="8">${h === 23 ? '24' : h}</text>`
+      ).join('');
+
+      // y-axis max label
+      const yLabel = `<text x="${(W-PX).toFixed(1)}" y="${(PT+9).toFixed(1)}" text-anchor="end" fill="#898781" font-size="8">2.5 mm</text>`;
+
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      svg.innerHTML = `
+        ${gridLines}
+        <line x1="${PX}" y1="${PT+plotH}" x2="${W-PX}" y2="${PT+plotH}" stroke="#383835" stroke-width="1"/>
+        ${bars}
+        ${axisLabels}
+        ${yLabel}
+      `;
+    }
+
+    /* ── 5-day forecast icons (inline SVG) ─────────────────────── */
+    function weatherIcon(cond) {
+      if (cond === 'sun') return `
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="4" fill="#c98500"/>
+          <line x1="10" y1="1" x2="10" y2="3.5" stroke="#c98500" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="10" y1="16.5" x2="10" y2="19" stroke="#c98500" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="1" y1="10" x2="3.5" y2="10" stroke="#c98500" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="16.5" y1="10" x2="19" y2="10" stroke="#c98500" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="3.5" y1="3.5" x2="5.3" y2="5.3" stroke="#c98500" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="14.7" y1="14.7" x2="16.5" y2="16.5" stroke="#c98500" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="16.5" y1="3.5" x2="14.7" y2="5.3" stroke="#c98500" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="5.3" y1="14.7" x2="3.5" y2="16.5" stroke="#c98500" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>`;
+      if (cond === 'rain') return `
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <ellipse cx="11" cy="8" rx="6" ry="4" fill="#898781" opacity="0.7"/>
+          <ellipse cx="7"  cy="9" rx="4" ry="3.5" fill="#898781" opacity="0.7"/>
+          <line x1="7"  y1="14" x2="5"  y2="18" stroke="#3987e5" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="11" y1="14" x2="9"  y2="18" stroke="#3987e5" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="15" y1="14" x2="13" y2="18" stroke="#3987e5" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>`;
+      // partly cloudy (default)
+      return `
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="8" cy="8" r="4" fill="#c98500" opacity="0.8"/>
+          <line x1="8" y1="2" x2="8" y2="1"   stroke="#c98500" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="8" y1="15" x2="8" y2="14" stroke="#c98500" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="2" y1="8" x2="1" y2="8"   stroke="#c98500" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="15" y1="8" x2="14" y2="8" stroke="#c98500" stroke-width="1.4" stroke-linecap="round"/>
+          <ellipse cx="13" cy="14" rx="6" ry="4" fill="#898781" opacity="0.65"/>
+          <ellipse cx="9"  cy="15" rx="4" ry="3" fill="#898781" opacity="0.65"/>
+        </svg>`;
+    }
+
+    function buildForecast() {
+      const el = document.getElementById('forecast');
+      el.innerHTML = FORECAST.map(d => `
+        <div class="wx-fc-day">
+          <div class="wx-fc-name">${d.name}</div>
+          <div class="wx-fc-icon">${weatherIcon(d.cond)}</div>
+          <div class="wx-fc-high">${d.high}°</div>
+          <div class="wx-fc-low">${d.low}°</div>
+          <div class="wx-fc-rain">${d.rain}</div>
+        </div>
+      `).join('');
+    }
+
+    buildForecast();
+
+    // Build charts after layout is painted so clientWidth is available
+    requestAnimationFrame(() => {
+      buildTempChart();
+      buildPrecipChart();
+    });
+
+    /* ── Audi live data ─────────────────────────────────────────── */
+    async function loadAudi() {
+      try {
+        const res = await fetch('audi.json?nocache=' + Date.now());
+        if (!res.ok) return;
+        const data = await res.json();
+        renderAudi(data);
+      } catch {}
+    }
+
+    function renderAudi(data) {
+      const soc = data.stateOfCharge;
+      const range = data.rangeKm;
+      const state = data.chargingState;
+      const power = data.chargingPower;
+      const remaining = data.remainingChargingTime;
+
+      if (soc == null) return;
+
+      const socEl = document.querySelector('.audi-stat:nth-child(1) strong');
+      const rangeEl = document.querySelector('.audi-stat:nth-child(2) strong');
+      const finEl = document.querySelector('.audi-stat:nth-child(3) strong');
+      const fill = document.querySelector('.battery-fill');
+      const statusEl = document.querySelector('.audi-status');
+
+      if (socEl) socEl.textContent = soc + ' %';
+      if (rangeEl && range != null) rangeEl.textContent = range + ' km';
+      if (fill) {
+        fill.style.width = soc + '%';
+        fill.style.background = soc >= 70 ? 'var(--good)' : soc >= 30 ? 'var(--blue)' : 'var(--orange)';
+      }
+
+      if (state === 'charging' && remaining && finEl) {
+        const now = new Date();
+        const done = new Date(now.getTime() + remaining * 60000);
+        finEl.textContent = done.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      } else if (finEl) {
+        finEl.textContent = state === 'chargingComplete' ? '100 %' : '--';
+      }
+
+      if (statusEl) {
+        const stateMap = {
+          'charging': 'Lädt',
+          'readyForCharging': 'Bereit',
+          'notReadyForCharging': 'Getrennt',
+          'conservationCharging': 'Erhaltung',
+          'chargingComplete': 'Voll',
+        };
+        const dot = statusEl.querySelector('.status-dot');
+        const label = stateMap[state] || state || '';
+        statusEl.innerHTML = (dot ? dot.outerHTML : '<span class="status-dot"></span>') + label;
+      }
+    }
+
+    loadAudi();
+    setInterval(loadAudi, 30 * 60 * 1000);
+
+    /* ── Bring live data ─────────────────────────────────────────── */
+    async function loadBring() {
+      try {
+        const res = await fetch('bring.json?nocache=' + Date.now());
+        if (!res.ok) return;
+        const data = await res.json();
+        renderBring(data.items || []);
+      } catch {}
+    }
+
+    function renderBring(items) {
+      const el = document.querySelector('.bring-list');
+      if (!el || !items.length) return;
+      el.innerHTML = items.map(item =>
+        `<div class="bring-item">
+          <span>${item.name}</span>
+          ${item.specification ? `<span class="bring-qty">${item.specification}</span>` : ''}
+        </div>`
+      ).join('');
+    }
+
+    loadBring();
+    setInterval(loadBring, 30 * 60 * 1000);
+  </script>
+
+</body>
+</html>
