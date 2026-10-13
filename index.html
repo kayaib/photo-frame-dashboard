@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Family Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f0f0f;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-size: 1.2rem;
+      font-weight: 400;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .last-updated {
+      font-size: 0.75rem;
+      color: #444;
+    }
+
+    .date-group { margin-bottom: 1.5rem; }
+
+    .date-label {
+      font-size: 0.8rem;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+
+    .event {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid #1e1e1e;
+    }
+
+    .event-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .event-time {
+      font-size: 0.8rem;
+      color: #555;
+      min-width: 3.5rem;
+    }
+
+    .event-title { font-size: 1rem; }
+
+    .status {
+      color: #555;
+      font-size: 0.9rem;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Upcoming Events</h1>
+    <div class="last-updated" id="last-updated"></div>
+  </header>
+
+  <div id="events-container"><div class="status">Loading calendar...</div></div>
+
+  <script>
+    async function loadCalendar() {
+      let text;
+      try {
+        const res = await fetch('calendar.ics?nocache=' + Date.now());
+        if (!res.ok) throw new Error(res.status);
+        text = await res.text();
+      } catch (err) {
+        document.getElementById('events-container').innerHTML =
+          '<div class="status">Could not load calendar.ics</div>';
+        return;
+      }
+
+      const now = new Date();
+      const in30days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const events = parseICS(text).filter(e => e.date >= now && e.date <= in30days);
+
+      document.getElementById('last-updated').textContent =
+        'Updated ' + now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+      const container = document.getElementById('events-container');
+      container.innerHTML = '';
+
+      if (events.length === 0) {
+        container.innerHTML = '<div class="status">No events in the next 30 days.</div>';
+        return;
+      }
+
+      const groups = {};
+      for (const ev of events) {
+        const key = ev.date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(ev);
+      }
+
+      for (const [dateLabel, evs] of Object.entries(groups)) {
+        const group = document.createElement('div');
+        group.className = 'date-group';
+
+        const label = document.createElement('div');
+        label.className = 'date-label';
+        label.textContent = dateLabel;
+        group.appendChild(label);
+
+        for (const ev of evs) {
+          const row = document.createElement('div');
+          row.className = 'event';
+
+          const dot = document.createElement('div');
+          dot.className = 'event-dot';
+          dot.style.background = ev.color;
+
+          const time = document.createElement('div');
+          time.className = 'event-time';
+          time.textContent = ev.allDay
+            ? 'All day'
+            : ev.date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+          const title = document.createElement('div');
+          title.className = 'event-title';
+          title.textContent = ev.summary;
+
+          row.appendChild(dot);
+          row.appendChild(time);
+          row.appendChild(title);
+          group.appendChild(row);
+        }
+
+        container.appendChild(group);
+      }
+    }
+
+    function parseICS(text) {
+      const events = [];
+      const blocks = text.split('BEGIN:VEVENT');
+      blocks.shift();
+
+      for (const block of blocks) {
+        const get = (key) => {
+          const match = block.match(new RegExp(`${key}[^:]*:([^\\r\\n]+)`));
+          return match ? match[1].trim() : null;
+        };
+
+        const summary = get('SUMMARY');
+        const color = get('COLOR') || '#2ecc87';
+        const dtstart = get('DTSTART');
+        if (!summary || !dtstart) continue;
+
+        const date = parseDate(dtstart);
+        if (!date) continue;
+
+        events.push({ summary, color, date, allDay: !dtstart.includes('T') });
+      }
+
+      return events.sort((a, b) => a.date - b.date);
+    }
+
+    function parseDate(dtstring) {
+      const raw = dtstring.includes(':') ? dtstring.split(':').pop() : dtstring;
+      if (!raw) return null;
+      const y = raw.slice(0, 4), mo = raw.slice(4, 6), d = raw.slice(6, 8);
+      if (raw.includes('T')) {
+        return new Date(`${y}-${mo}-${d}T${raw.slice(9, 11)}:${raw.slice(11, 13)}:00`);
+      }
+      return new Date(`${y}-${mo}-${d}T00:00:00`);
+    }
+
+    loadCalendar();
+    // Auto-refresh every 30 minutes
+    setInterval(loadCalendar, 30 * 60 * 1000);
+  </script>
+
+</body>
+</html>
