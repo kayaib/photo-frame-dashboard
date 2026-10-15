@@ -50,6 +50,7 @@ jobs:
         run: pip install requests beautifulsoup4
 
       - name: Sync Audi status
+        continue-on-error: true
         env:
           AUDI_USERNAME: ${{ secrets.AUDI_USERNAME }}
           AUDI_PASSWORD: ${{ secrets.AUDI_PASSWORD }}

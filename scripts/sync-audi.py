@@ -359,7 +359,8 @@ def main():
         if not d.get("name", "").lower().endswith("_no_content_found.zip")
     ]
     if not content_sets:
-        raise RuntimeError("No data available yet — portal may still be collecting first dataset.")
+        print("No files available yet — portal is still collecting data. audi.json unchanged.")
+        sys.exit(0)
 
     # Sort by createdOn, take newest
     content_sets.sort(key=lambda d: d.get("createdOn", ""))
