@@ -45,21 +45,14 @@ jobs:
           BRING_PASSWORD: ${{ secrets.BRING_PASSWORD }}
         run: node scripts/sync-bring.js
 
-      # ── Audi Q4 e-tron ────────────────────────────────────────
-      - name: Clone myaudi-api
-        run: git clone --depth 1 https://github.com/John6810/myaudi-api.git /tmp/myaudi-api
-
-      - name: Install myaudi-api requirements
-        run: pip install -r /tmp/myaudi-api/requirements.txt
+      # ── Audi Q4 e-tron (EU Data Act portal) ───────────────────
+      - name: Install Audi dependencies
+        run: pip install requests beautifulsoup4
 
       - name: Sync Audi status
         env:
           AUDI_USERNAME: ${{ secrets.AUDI_USERNAME }}
           AUDI_PASSWORD: ${{ secrets.AUDI_PASSWORD }}
-          AUDI_COUNTRY: DE
-          AUDI_SPIN: ${{ secrets.AUDI_SPIN }}
-          AUDI_TOKEN_KEY: ${{ secrets.AUDI_TOKEN_KEY }}
-          MYAUDI_API_PATH: /tmp/myaudi-api
         run: python scripts/sync-audi.py
 
       # ── Commit all changes ────────────────────────────────────
@@ -67,6 +60,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add calendar.ics bring.json audi.json audi_tokens.enc
+          git add calendar.ics bring.json audi.json
           git diff --cached --quiet || git commit -m "sync: update calendar, shopping list and car status"
           git push

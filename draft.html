@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Family Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #090909;
+      --surface:   #101010;
+      --border:    #1c1c1c;
+      --text:      #ebebeb;
+      --text-2:    #888;
+      --text-3:    #444;
+      --green:     #22c55e;
+      --blue:      #3b82f6;
+      --amber:     #f59e0b;
+      --red:       #ef4444;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 16px;
+      overflow: hidden;
+    }
+
+    /* ── Layout ──────────────────────────────────────────────────────── */
+
+    .layout {
+      display: grid;
+      height: 100vh;
+      grid-template-rows: auto 1fr;
+      grid-template-columns: 1fr 360px;
+      grid-template-areas:
+        "header header"
+        "calendar sidebar";
+      gap: 0;
+      padding: 28px 28px 24px;
+      column-gap: 20px;
+      row-gap: 20px;
+    }
+
+    /* ── Header ──────────────────────────────────────────────────────── */
+
+    header {
+      grid-area: header;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-left .day-name {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      margin-bottom: 2px;
+    }
+
+    .header-left .full-date {
+      font-size: 1.55rem;
+      font-weight: 300;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .header-right .clock {
+      font-size: 3.6rem;
+      font-weight: 300;
+      letter-spacing: -0.04em;
+      color: var(--text);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Calendar ────────────────────────────────────────────────────── */
+
+    .calendar-col {
+      grid-area: calendar;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .calendar-col::-webkit-scrollbar { display: none; }
+
+    .date-group { margin-bottom: 20px; }
+
+    .date-label {
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2px;
+    }
+
+    .date-label.today { color: var(--blue); }
+    .date-label.tomorrow { color: var(--text-2); }
+
+    .event {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .event:last-child { border-bottom: none; }
+
+    .event-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .event-time {
+      font-size: 0.78rem;
+      color: var(--text-3);
+      min-width: 3.8rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .event-title {
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .no-events {
+      color: var(--text-3);
+      font-size: 0.9rem;
+      padding-top: 8px;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────── */
+
+    .sidebar {
+      grid-area: sidebar;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .sidebar::-webkit-scrollbar { display: none; }
+
+    /* ── Card ────────────────────────────────────────────────────────── */
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .card-label {
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-bottom: 10px;
+    }
+
+    /* ── Weather card ────────────────────────────────────────────────── */
+
+    .weather-main {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .weather-temp {
+      font-size: 2.4rem;
+      font-weight: 300;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .weather-unit {
+      font-size: 1rem;
+      color: var(--text-2);
+      margin-bottom: 4px;
+    }
+
+    .weather-desc {
+      font-size: 0.85rem;
+      color: var(--text-2);
+      margin-bottom: 10px;
+    }
+
+    .weather-forecast {
+      display: flex;
+      gap: 4px;
+    }
+
+    .fc-day {
+      flex: 1;
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 7px 4px;
+      text-align: center;
+    }
+
+    .fc-day .fc-name {
+      font-size: 0.6rem;
+      color: var(--text-3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .fc-day .fc-icon { font-size: 1.1rem; margin-bottom: 3px; }
+
+    .fc-day .fc-hi {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .fc-day .fc-lo {
+      font-size: 0.72rem;
+      color: var(--text-3);
+    }
+
+    /* ── Audi card ───────────────────────────────────────────────────── */
+
+    .audi-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .audi-soc {
+      font-size: 2.6rem;
+      font-weight: 300;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .audi-soc-unit {
+      font-size: 1rem;
+      color: var(--text-2);
+    }
+
+    .audi-range {
+      font-size: 0.82rem;
+      color: var(--text-2);
+      margin-bottom: 10px;
+    }
+
+    .bar-track {
+      height: 5px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease, background 0.5s ease;
+    }
+
+    .audi-status {
+      font-size: 0.8rem;
+      color: var(--text-2);
+    }
+
+    .audi-status .dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+      position: relative;
+      top: -1px;
+    }
+
+    /* ── Bring list ──────────────────────────────────────────────────── */
+
+    .bring-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px 8px;
+    }
+
+    .bring-item {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+      min-width: 0;
+    }
+
+    .bring-name {
+      font-size: 0.85rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bring-qty {
+      font-size: 0.7rem;
+      color: var(--text-3);
+      flex-shrink: 0;
+    }
+
+    .bring-more {
+      font-size: 0.72rem;
+      color: var(--text-3);
+      margin-top: 6px;
+      text-align: right;
+    }
+
+    /* ── Footer sync time ────────────────────────────────────────────── */
+
+    .sync-label {
+      font-size: 0.62rem;
+      color: var(--text-3);
+      margin-top: auto;
+      padding-top: 8px;
+      text-align: right;
+    }
+
+    /* ── Skeleton state ──────────────────────────────────────────────── */
+
+    .skeleton {
+      color: var(--text-3);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <div class="day-name" id="day-name"></div>
+      <div class="full-date" id="full-date"></div>
+    </div>
+    <div class="header-right">
+      <div class="clock" id="clock"></div>
+    </div>
+  </header>
+
+  <!-- Calendar -->
+  <div class="calendar-col" id="calendar-col">
+    <div class="skeleton">Kalender wird geladen...</div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <!-- Weather -->
+    <div class="card" id="weather-card">
+      <div class="card-label">Wetter &middot; Köngen</div>
+      <div id="weather-body" class="skeleton">Wird geladen...</div>
+    </div>
+
+    <!-- Audi -->
+    <div class="card" id="audi-card">
+      <div class="card-label">Audi Q4 e-tron</div>
+      <div id="audi-body" class="skeleton">Wird geladen...</div>
+    </div>
+
+    <!-- Shopping list -->
+    <div class="card" id="bring-card">
+      <div class="card-label">Einkaufen</div>
+      <div id="bring-body" class="skeleton">Wird geladen...</div>
+    </div>
+
+    <div class="sync-label" id="sync-label"></div>
+  </div>
+
+</div>
+
+<script>
+  // ── Clock ────────────────────────────────────────────────────────────
+
+  function tickClock() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('clock').textContent = hh + ':' + mm;
+
+    document.getElementById('day-name').textContent =
+      now.toLocaleDateString('de-DE', { weekday: 'long' }).toUpperCase();
+
+    document.getElementById('full-date').textContent =
+      now.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  // ── Calendar ─────────────────────────────────────────────────────────
+
+  async function loadCalendar() {
+    try {
+      const res = await fetch('calendar.ics?t=' + Date.now());
+      if (!res.ok) throw new Error(res.status);
+      const text = await res.text();
+      renderCalendar(parseICS(text));
+    } catch {
+      document.getElementById('calendar-col').innerHTML =
+        '<div class="skeleton">Kalender nicht verfügbar</div>';
+    }
+  }
+
+  function parseICS(text) {
+    const events = [];
+    const blocks = text.split('BEGIN:VEVENT');
+    blocks.shift();
+    for (const block of blocks) {
+      const get = k => {
+        const m = block.match(new RegExp(k + '[^:]*:([^\\r\\n]+)'));
+        return m ? m[1].trim() : null;
+      };
+      const summary = get('SUMMARY');
+      const color   = get('COLOR') || '#3b82f6';
+      const dtstart = get('DTSTART');
+      if (!summary || !dtstart) continue;
+      const date = parseICSDate(dtstart);
+      if (!date) continue;
+      events.push({ summary, color, date, allDay: !dtstart.includes('T') });
+    }
+    return events.sort((a, b) => a.date - b.date);
+  }
+
+  function parseICSDate(s) {
+    const raw = s.includes(':') ? s.split(':').pop() : s;
+    if (!raw) return null;
+    const y = raw.slice(0, 4), mo = raw.slice(4, 6), d = raw.slice(6, 8);
+    if (raw.includes('T')) {
+      const utc = raw.endsWith('Z');
+      const iso = `${y}-${mo}-${d}T${raw.slice(9, 11)}:${raw.slice(11, 13)}:00${utc ? 'Z' : ''}`;
+      return new Date(iso);
+    }
+    return new Date(`${y}-${mo}-${d}T00:00:00`);
+  }
+
+  function renderCalendar(events) {
+    const now    = new Date();
+    const today  = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const cutoff = new Date(today.getTime() + 21 * 86400000);
+
+    const upcoming = events.filter(e => e.date >= today && e.date < cutoff);
+    const col = document.getElementById('calendar-col');
+
+    if (!upcoming.length) {
+      col.innerHTML = '<div class="no-events">Keine Termine in den nächsten 21 Tagen.</div>';
+      return;
+    }
+
+    const groups = {};
+    for (const ev of upcoming) {
+      const eDay = new Date(ev.date.getFullYear(), ev.date.getMonth(), ev.date.getDate());
+      const diff = Math.round((eDay - today) / 86400000);
+      let key;
+      if (diff === 0)      key = 'HEUTE';
+      else if (diff === 1) key = 'MORGEN';
+      else key = ev.date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
+      if (!groups[key]) groups[key] = { diff, evs: [] };
+      groups[key].evs.push(ev);
+    }
+
+    col.innerHTML = '';
+    for (const [label, { diff, evs }] of Object.entries(groups)) {
+      const g = document.createElement('div');
+      g.className = 'date-group';
+
+      const dl = document.createElement('div');
+      dl.className = 'date-label' + (diff === 0 ? ' today' : diff === 1 ? ' tomorrow' : '');
+      dl.textContent = label;
+      g.appendChild(dl);
+
+      for (const ev of evs) {
+        const row = document.createElement('div');
+        row.className = 'event';
+
+        const dot = document.createElement('div');
+        dot.className = 'event-dot';
+        dot.style.background = ev.color;
+
+        const time = document.createElement('div');
+        time.className = 'event-time';
+        time.textContent = ev.allDay ? 'Ganztags'
+          : ev.date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+        const title = document.createElement('div');
+        title.className = 'event-title';
+        title.textContent = ev.summary;
+
+        row.appendChild(dot);
+        row.appendChild(time);
+        row.appendChild(title);
+        g.appendChild(row);
+      }
+      col.appendChild(g);
+    }
+  }
+
+  // ── Weather (Open-Meteo, no key required) ────────────────────────────
+
+  const WMO = {
+    0:  ['Klar',              '☀️'],
+    1:  ['Überwiegend klar',  '🌤️'],
+    2:  ['Teils bewölkt',     '⛅'],
+    3:  ['Bewölkt',           '☁️'],
+    45: ['Nebel',             '🌫️'],
+    48: ['Reifnebel',         '🌫️'],
+    51: ['Leichter Niesel',   '🌦️'],
+    53: ['Nieselregen',       '🌦️'],
+    61: ['Leichter Regen',    '🌧️'],
+    63: ['Regen',             '🌧️'],
+    65: ['Starker Regen',     '🌧️'],
+    71: ['Leichter Schnee',   '🌨️'],
+    73: ['Schneefall',        '❄️'],
+    80: ['Regenschauer',      '🌦️'],
+    81: ['Schauer',           '🌧️'],
+    82: ['Starke Schauer',    '⛈️'],
+    95: ['Gewitter',          '⛈️'],
+    99: ['Gewitter mit Hagel','⛈️'],
+  };
+
+  function wmoLabel(code) {
+    if (!code && code !== 0) return ['—', '❓'];
+    const exact = WMO[code];
+    if (exact) return exact;
+    for (const k of Object.keys(WMO).sort((a, b) => b - a)) {
+      if (code >= +k) return WMO[k];
+    }
+    return ['—', '❓'];
+  }
+
+  async function loadWeather() {
+    const url = 'https://api.open-meteo.com/v1/forecast'
+      + '?latitude=48.68&longitude=9.37'
+      + '&current=temperature_2m,weather_code,apparent_temperature'
+      + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
+      + '&timezone=Europe%2FBerlin&forecast_days=4';
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(res.status);
+      const d = await res.json();
+      renderWeather(d);
+    } catch {
+      document.getElementById('weather-body').textContent = 'Nicht verfügbar';
+    }
+  }
+
+  function renderWeather(d) {
+    const cur  = d.current;
+    const temp = Math.round(cur.temperature_2m);
+    const feel = Math.round(cur.apparent_temperature);
+    const [desc, icon] = wmoLabel(cur.weather_code);
+
+    const daily = d.daily;
+    const days  = daily.time.slice(0, 4).map((t, i) => ({
+      name:  new Date(t + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short' }).toUpperCase(),
+      code:  daily.weather_code[i],
+      hi:    Math.round(daily.temperature_2m_max[i]),
+      lo:    Math.round(daily.temperature_2m_min[i]),
+    }));
+
+    const body = document.getElementById('weather-body');
+    body.innerHTML = `
+      <div class="weather-main">
+        <span class="weather-temp">${temp}</span>
+        <span class="weather-unit">°C</span>
+      </div>
+      <div class="weather-desc">${icon} ${desc} &middot; Gefühlt ${feel}°</div>
+      <div class="weather-forecast">
+        ${days.map(d => `
+          <div class="fc-day">
+            <div class="fc-name">${d.name}</div>
+            <div class="fc-icon">${wmoLabel(d.code)[1]}</div>
+            <div class="fc-hi">${d.hi}°</div>
+            <div class="fc-lo">${d.lo}°</div>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  // ── Audi ─────────────────────────────────────────────────────────────
+
+  async function loadAudi() {
+    try {
+      const res = await fetch('audi.json?t=' + Date.now());
+      if (!res.ok) throw new Error(res.status);
+      renderAudi(await res.json());
+    } catch {
+      document.getElementById('audi-body').textContent = 'Nicht verfügbar';
+    }
+  }
+
+  function renderAudi(d) {
+    const soc  = d.stateOfCharge;
+    const km   = d.rangeKm;
+    const state = d.chargingState;
+    const plug  = d.plugState;
+    const rem   = d.remainingChargingTime;
+    const target = d.targetSoc;
+
+    if (soc == null) {
+      document.getElementById('audi-body').textContent = 'Keine Daten';
+      return;
+    }
+
+    const barColor = soc >= 70 ? 'var(--green)' : soc >= 25 ? 'var(--blue)' : 'var(--red)';
+
+    const stateMap = {
+      charging:           'Lädt',
+      readyForCharging:   plug === 'connected' ? 'Verbunden' : 'Bereit',
+      notReadyForCharging:'Nicht verbunden',
+      conservationCharging:'Erhaltungsladung',
+      chargingComplete:   'Vollgeladen',
+    };
+    let stateText = stateMap[state] || state || '';
+    if (state === 'charging' && rem) {
+      const h = Math.floor(rem / 60), m = rem % 60;
+      stateText += h > 0 ? ` · noch ${h}h ${m}min` : ` · noch ${m}min`;
+    }
+    if (target != null && state !== 'chargingComplete') {
+      stateText += ` · Ziel ${target}%`;
+    }
+
+    const dotColor = state === 'charging' ? 'var(--green)'
+      : plug === 'connected' ? 'var(--amber)' : 'var(--text-3)';
+
+    document.getElementById('audi-body').innerHTML = `
+      <div class="audi-row">
+        <span class="audi-soc">${soc}</span>
+        <span class="audi-soc-unit">%</span>
+      </div>
+      ${km != null ? `<div class="audi-range">${km} km Reichweite</div>` : ''}
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${soc}%;background:${barColor}"></div>
+      </div>
+      ${stateText ? `<div class="audi-status">
+        <span class="dot" style="background:${dotColor}"></span>${stateText}
+      </div>` : ''}`;
+  }
+
+  // ── Bring ─────────────────────────────────────────────────────────────
+
+  async function loadBring() {
+    try {
+      const res = await fetch('bring.json?t=' + Date.now());
+      if (!res.ok) throw new Error(res.status);
+      renderBring((await res.json()).items || []);
+    } catch {
+      document.getElementById('bring-body').textContent = 'Nicht verfügbar';
+    }
+  }
+
+  function renderBring(items) {
+    if (!items.length) {
+      document.getElementById('bring-body').innerHTML =
+        '<div class="skeleton">Liste ist leer 🎉</div>';
+      return;
+    }
+
+    const MAX = 14;
+    const show = items.slice(0, MAX);
+    const more = items.length - MAX;
+
+    const body = document.getElementById('bring-body');
+    body.innerHTML = `
+      <div class="bring-grid">
+        ${show.map(i => `
+          <div class="bring-item">
+            <span class="bring-name">${esc(i.name)}</span>
+            ${i.specification ? `<span class="bring-qty">${esc(i.specification)}</span>` : ''}
+          </div>`).join('')}
+      </div>
+      ${more > 0 ? `<div class="bring-more">+ ${more} weitere</div>` : ''}`;
+  }
+
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Sync label ────────────────────────────────────────────────────────
+
+  function updateSyncLabel() {
+    const now = new Date();
+    document.getElementById('sync-label').textContent =
+      'Aktualisiert ' + now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ── Init & auto-refresh ───────────────────────────────────────────────
+
+  async function refresh() {
+    await Promise.allSettled([loadCalendar(), loadWeather(), loadAudi(), loadBring()]);
+    updateSyncLabel();
+  }
+
+  refresh();
+  setInterval(refresh, 30 * 60 * 1000);
+</script>
+
+</body>
+</html>
