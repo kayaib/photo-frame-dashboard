@@ -10,10 +10,9 @@ PREREQUISITE (one-time, in a browser):
   3. Click "Allow" on the consent screen
   4. Link your vehicle
   5. Request vehicle data:
-     - For continuous updates: Data clusters → Vehicle overview →
-       Get customised data → Continuous, 15 min interval
-     - For a one-time batch: Data clusters → Vehicle overview →
-       Get all data
+     - One-time batch: Fahrzeugdetails → "Verfügbare Daten anfragen"
+     - Continuous (preferred): Fahrzeugdetails → "Benutzerdefinierte Daten anfragen"
+       → configure data clusters + frequency (e.g. 1h)
 
 After that this script runs headlessly every hour via GitHub Actions.
 It prefers a continuous 'partial' request if one exists, and falls back
@@ -38,7 +37,7 @@ IDENTITY_BASE = "https://identity.vwgroup.io"
 AUTHORIZE_URL = IDENTITY_BASE + "/oidc/v1/authorize"
 REDIRECT_URI  = BASE_URL + "/login"
 SCOPE         = "openid cars profile"
-CLIENT_ID     = "cc29b87a-5e9a-4362-aecf-5adea6b01bbb@apps_vw-dilab_com"  # Audi
+CLIENT_ID     = "cc29b87a-5e9a-4362-aecf-5adea6b01bbb@apps_vw-dilab_com"
 BRAND_STATE   = "de__en__AUDI"
 
 SENTINEL_INTS = {65535, 2147483647, 4294967295}
@@ -136,7 +135,7 @@ def login(email: str, password: str) -> requests.Session:
     session = requests.Session()
     session.headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) photo-frame-dashboard/1.0"
 
-    # Step 1: start OIDC flow → email form (server-rendered, _csrf present in HTML)
+    # Step 1: start OIDC flow → email form
     auth_url = (
         f"{AUTHORIZE_URL}?client_id={CLIENT_ID}"
         f"&response_type=code&scope={SCOPE}"
@@ -155,8 +154,7 @@ def login(email: str, password: str) -> requests.Session:
     r2 = session.post(action, data=fields, allow_redirects=True)
     r2.raise_for_status()
 
-    # Step 3: POST password — password page is client-rendered (no <form> tag),
-    # hmac/relayState come from templateModel; _csrf is reused from step 1.
+    # Step 3: POST password
     model2 = _template_model(r2.text)
     hmac2 = model2.get("hmac", "")
     relay2 = model2.get("relayState", "")
@@ -173,7 +171,7 @@ def login(email: str, password: str) -> requests.Session:
         "password":   password,
     }, allow_redirects=True)
 
-    # Step 4: accept VW scope consent (first-time only; idempotent on retries)
+    # Step 4: accept VW scope consent (first-time only)
     if "consent" in r3.url and "signin-service" in r3.url:
         _, consent_pairs = _parse_form_pairs(r3.text, r3.url)
         r3 = session.post(r3.url, data=consent_pairs, allow_redirects=True)
@@ -226,13 +224,13 @@ def get_identifier(session: requests.Session, vin: str) -> tuple[str, str]:
     r2 = session.get(f"{BASE_URL}/proxy_api/euda-apim/datarequest/vehicles/{vin}/metadata/all")
     if r2.status_code == 200:
         meta = r2.json()
-        print(f"Using 'all' data request (Frequency={meta.get('Frequency')}, expires {meta.get('ExpirationDate')})")
+        print(f"Using 'all' data request (Frequency={meta.get('Frequency')}, expires {meta.get('EndDate')})")
         return meta["Identifier"], "all"
 
     if r2.status_code == 404:
         raise RuntimeError(
             f"No data request configured for VIN {vin}.\n"
-            "In the portal: Data clusters → Vehicle overview → Get customised data."
+            "In the portal: Fahrzeugdetails → 'Verfügbare Daten anfragen'"
         )
     r2.raise_for_status()
     raise RuntimeError("Unreachable")
@@ -285,7 +283,7 @@ def parse_zip(data: bytes) -> dict[str, str]:
             raise RuntimeError("No JSON in dataset ZIP")
         payload = json.loads(zf.read(json_name))
 
-    points: dict[str, dict] = {}  # field_name → {value, seq}
+    points: dict[str, dict] = {}
     for seq, item in enumerate(payload.get("Data", [])):
         field = item.get("dataFieldName") or item.get("key", "")
         if not field:
@@ -362,7 +360,6 @@ def main():
         print("No files available yet — portal is still collecting data. audi.json unchanged.")
         sys.exit(0)
 
-    # Sort by createdOn, take newest
     content_sets.sort(key=lambda d: d.get("createdOn", ""))
     latest = content_sets[-1]
     print(f"Downloading dataset: {latest['name']}")
